@@ -1,0 +1,16 @@
+{
+  "name": "fivem-ui",
+  "private": true,
+  "version": "1.0.1",
+  "description": "ui for fiveM server",
+  "workspaces": [
+    "packages/*"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:ui": "npm run build -w @fivem/ui"
+  },
+  "author": "",
+  "license": "ISC"
+}
