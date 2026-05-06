@@ -1,5 +1,95 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type ComponentType,
+} from "react";
 import { Button } from "@fivem/ui";
+import {
+  AudioLines,
+  GlassWater,
+  Hamburger,
+  Shield,
+  ShieldX,
+  Zap,
+} from "lucide-react";
+
+type IconType = ComponentType<{ className?: string; style?: CSSProperties }>;
+
+function IconBar({ Icon, value }: { Icon: IconType; value: number }) {
+  const clamped = Math.max(0, Math.min(100, value));
+  return (
+    <div className="relative">
+      <Icon className="text-white/20" />
+      <Icon
+        className="absolute inset-0 text-white transition-[clip-path] duration-500 ease-out"
+        style={{ clipPath: `inset(${100 - clamped}% 0 0 0)` }}
+      />
+    </div>
+  );
+}
+
+function VestIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      width="24"
+      height="24"
+    >
+      <path d="M7 3 L10 4 L12 6 L14 4 L17 3 L20 6 L20 9 L17 10 L17 21 L7 21 L7 10 L4 9 L4 6 Z" />
+    </svg>
+  );
+}
+
+function ArmorBadge({
+  level,
+  durability,
+}: {
+  level: number;
+  durability: number;
+}) {
+  const isWearing = level > 0;
+  const clamped = Math.max(0, Math.min(100, durability));
+  const isBroken = isWearing && clamped <= 0;
+  const isLow = isWearing && clamped > 0 && clamped < 40;
+
+  const fillColor = !isWearing
+    ? "text-white/40"
+    : isBroken
+      ? "text-red-500"
+      : isLow
+        ? "text-orange-400"
+        : "text-white";
+
+  if (isBroken) {
+    return (
+      <div className="relative inline-flex">
+        <ShieldX className="w-6 h-6 text-red-500" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative inline-flex">
+      <Shield className="w-6 h-6 text-white/20" />
+      <Shield
+        className={`absolute inset-0 w-6 h-6 transition-[clip-path,color] duration-500 ease-out ${fillColor}`}
+        style={{ clipPath: `inset(${100 - clamped}% 0 0 0)` }}
+      />
+      <span
+        className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold leading-none pt-1 transition-colors duration-300 ${fillColor}`}
+      >
+        {isWearing ? level : "-"}
+      </span>
+    </div>
+  );
+}
 
 type ModalPhase = "open" | "closing" | "closed";
 
@@ -14,7 +104,7 @@ const screenClass =
   "fixed inset-0 overflow-hidden bg-[#050807] font-sans text-slate-50";
 
 const backgroundClass =
-  "absolute inset-0 bg-cover bg-center transition-[filter,brightness] duration-300 ease-out";
+  "absolute inset-0 bg-cover bg-center transition-[filter,brightness] duration-300 ease-out z-10";
 
 const viewportClass = "relative z-10 grid h-full w-full place-items-center p-8";
 
@@ -41,6 +131,29 @@ function getViewportScale() {
 export default function App() {
   const [modalPhase, setModalPhase] = useState<ModalPhase>("open");
   const [scale, setScale] = useState(() => getViewportScale());
+  const [stamina, setStamina] = useState(60);
+  const [blood, setBlood] = useState(80);
+  const [food, setFood] = useState(70);
+  const [thirst, setThirst] = useState(70);
+  const [voice, setVoice] = useState(70);
+  const [armor, setArmor] = useState(70);
+  const [armorLevel, setArmorLevel] = useState(2);
+  const [wearingArmor, setWearingArmor] = useState(true);
+  const [energy, setEnergy] = useState(70);
+  const [playerId] = useState(() =>
+    Math.floor(1000 + Math.random() * 9000).toString(),
+  );
+
+  function randomize() {
+    const r = () => Math.round(Math.random() * 100);
+    setStamina(r());
+    setBlood(r());
+    setFood(r());
+    setThirst(r());
+    setVoice(r());
+    setEnergy(r());
+    setArmorLevel(1 + Math.floor(Math.random() * 3));
+  }
 
   const isModalVisible = modalPhase !== "closed";
   const isModalAnimatingOut = modalPhase === "closing";
@@ -68,14 +181,101 @@ export default function App() {
       <div
         className={[
           backgroundClass,
-          isModalVisible ? "blur-sm brightness-75" : "blur-0 brightness-100",
+          // isModalVisible ? "blur-sm brightness-75" : "blur-0 brightness-100",
         ].join(" ")}
         style={{
-          backgroundImage: `linear-gradient(rgba(2,6,5,0.2),rgba(2,6,5,0.5)), url(${BACKGROUND_IMAGE})`,
+          backgroundImage: `url(${BACKGROUND_IMAGE})`,
         }}
       />
 
-      <div className={viewportClass}>
+      {/* HUD Player Statsu */}
+      <div className="relative w-100 flex flex-col z-20 m-4">
+        {/* ID Badge */}
+        <div className="flex justify-end pb-1">
+          <span className="rounded-sm bg-black/50 px-2 py-0.5 text-[11px] font-mono tracking-wider text-white/80">
+            ID: {playerId}
+          </span>
+        </div>
+
+        {/* Status */}
+        <div className="w-full flex bg-black/40 rounded-t-sm h-10 p-2 justify-between">
+          <div className="flex gap-2 items-center text-white">
+            <ArmorBadge
+              level={wearingArmor ? armorLevel : 0}
+              durability={armor}
+            />
+            <IconBar Icon={Zap} value={energy} />
+          </div>
+          <div className="flex items-center gap-2 text-white">
+            <IconBar Icon={Hamburger} value={food} />
+            <IconBar Icon={GlassWater} value={thirst} />
+            <IconBar Icon={AudioLines} value={voice} />
+          </div>
+        </div>
+
+        {/* Run Status */}
+        <div
+          className="relative w-full h-1 overflow-hidden"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0 2px, transparent 2px 6px)",
+            backgroundColor: "rgba(255,255,255,0.05)",
+          }}
+        >
+          <div
+            className="h-full bg-orange-500/80 transition-[width] duration-500 ease-out"
+            style={{ width: `${stamina}%` }}
+          />
+        </div>
+
+        {/* Blood */}
+        <div
+          className="relative w-full h-6 rounded-b-sm overflow-hidden"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0 2px, transparent 2px 6px)",
+            backgroundColor: "rgba(0,0,0,0.4)",
+          }}
+        >
+          <div
+            className="h-full bg-blue-500/80 transition-[width] duration-500 ease-out"
+            style={{ width: `${blood}%` }}
+          />
+        </div>
+
+        <div className="mt-4 flex flex-col gap-2 rounded-sm bg-black/40 p-3 text-xs text-white">
+          <button
+            type="button"
+            onClick={randomize}
+            className="self-start rounded-sm bg-white/10 px-3 py-1.5 hover:bg-white/20"
+          >
+            Random
+          </button>
+
+          <label className="flex items-center gap-2 select-none">
+            <input
+              type="checkbox"
+              checked={wearingArmor}
+              onChange={(e) => setWearingArmor(e.target.checked)}
+            />
+            <span>ใส่เกราะ</span>
+          </label>
+
+          <label className="flex items-center gap-2">
+            <span className="w-20 text-white/70">Armor: {armor}%</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={armor}
+              onChange={(e) => setArmor(Number(e.target.value))}
+              disabled={!wearingArmor}
+              className="flex-1 disabled:opacity-40"
+            />
+          </label>
+        </div>
+      </div>
+      {/* <div className={viewportClass}>
         {isModalVisible ? (
           <div
             className="origin-center"
@@ -127,7 +327,7 @@ export default function App() {
             Open Modal
           </Button>
         )}
-      </div>
+      </div> */}
     </main>
   );
 }
